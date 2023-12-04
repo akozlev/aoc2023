@@ -18,7 +18,7 @@ pub fn part_one(input: &str) -> Option<u32> {
         let mut start = 0usize;
 
         for (x, ch) in line.chars().enumerate() {
-            let mut check_num = false;
+            let check_num;
             if let Some(digit) = ch.to_digit(10) {
                 if let Some(n) = number {
                     number = Some(n * 10 + digit);
@@ -89,7 +89,7 @@ pub fn part_two(input: &str) -> Option<u64> {
         let mut start = 0usize;
 
         for (x, ch) in line.chars().enumerate() {
-            let mut check_num = false;
+            let check_num;
             if let Some(digit) = ch.to_digit(10) {
                 if let Some(n) = number {
                     number = Some(n * 10 + digit as u64);
@@ -98,7 +98,7 @@ pub fn part_two(input: &str) -> Option<u64> {
                     number = Some(digit as u64);
                 }
 
-                check_num |= x == max_x;
+                check_num = x == max_x;
             } else {
                 check_num = number.is_some();
             }
@@ -106,7 +106,7 @@ pub fn part_two(input: &str) -> Option<u64> {
             if check_num {
                 let n = number.unwrap();
                 let mut indices: Vec<Coord> = vec![];
-                // construct array of indices
+
                 indices.push(Coord { x, y });
 
                 let mut s = start;
@@ -124,7 +124,6 @@ pub fn part_two(input: &str) -> Option<u64> {
                     (s..=x).for_each(|i| indices.push(Coord { x: i, y: y + 1 }));
                 }
 
-                // indices.find() to find star
                 if let Some(coord) = indices.iter().find(|coord| {
                     grid[coord.y]
                         .chars()
@@ -156,12 +155,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let result = part_one(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(4361));
     }
 
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(467835));
     }
 }
