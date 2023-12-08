@@ -6,46 +6,15 @@ use itertools::Itertools;
 
 advent_of_code::solution!(7);
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
-enum JokerCard {
-    Joker,
-    Two,
-    Three,
-    Four,
-    Five,
-    Six,
-    Seven,
-    Eight,
-    Nine,
-    Ten,
-    Queen,
-    King,
-    Ace,
-}
-
-impl From<char> for JokerCard {
-    fn from(value: char) -> Self {
-        match value {
-            'A' => Self::Ace,
-            'K' => Self::King,
-            'Q' => Self::Queen,
-            'J' => Self::Joker,
-            'T' => Self::Ten,
-            '9' => Self::Nine,
-            '8' => Self::Eight,
-            '7' => Self::Seven,
-            '6' => Self::Six,
-            '5' => Self::Five,
-            '4' => Self::Four,
-            '3' => Self::Three,
-            '2' => Self::Two,
-            _ => panic!("Unexpected charecter for card"),
-        }
-    }
+#[derive(Debug)]
+struct Hand {
+    cards: Vec<Card>,
+    bid: u32,
+    combination: Combination,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
-enum NormalCard {
+enum Card {
     Two,
     Three,
     Four,
@@ -61,7 +30,45 @@ enum NormalCard {
     Ace,
 }
 
-impl From<char> for NormalCard {
+const NORMAL_ORDERING: [Card; 13] = [
+    Card::Two,
+    Card::Three,
+    Card::Four,
+    Card::Five,
+    Card::Six,
+    Card::Seven,
+    Card::Eight,
+    Card::Nine,
+    Card::Ten,
+    Card::Jack,
+    Card::Queen,
+    Card::King,
+    Card::Ace,
+];
+
+const JOKER_ORDERING: [Card; 13] = [
+    Card::Jack,
+    Card::Two,
+    Card::Three,
+    Card::Four,
+    Card::Five,
+    Card::Six,
+    Card::Seven,
+    Card::Eight,
+    Card::Nine,
+    Card::Ten,
+    Card::Queen,
+    Card::King,
+    Card::Ace,
+];
+
+impl Card {
+    fn value(&self, ordering: [Card; 13]) -> u8 {
+        return ordering.iter().position(|p| p.eq(self)).unwrap() as u8;
+    }
+}
+
+impl From<char> for Card {
     fn from(value: char) -> Self {
         match value {
             'A' => Self::Ace,
@@ -93,97 +100,26 @@ enum Combination {
     FiveOfAKind,
 }
 
-impl From<&[JokerCard]> for Combination {
-    fn from(hand: &[JokerCard]) -> Self {
-        let mut cards: HashMap<JokerCard, u8> = HashMap::new();
-
-        for card in hand {
-            cards
-                .entry(*card)
-                .and_modify(|count| *count += 1)
-                .or_insert(1);
-        }
-
-        let jokers = cards.remove(&JokerCard::Joker);
-
-        let mut card_counts: Vec<u8> = cards
-            .values()
-            .sorted()
-            .map(|count| count.to_owned())
-            .collect();
-
-        if let Some(count) = jokers {
-            if let Some(last) = card_counts.last_mut() {
-                *last += count;
-            } else {
-                card_counts.push(count);
-            }
-        }
-
-        // 5
-        // 1 4
-        // 2 3
-        // 1 1 3
-        // 1 2 2
-        // 1 1 1 2
-        // 1 1 1 1 1
-        match card_counts.len() {
+impl From<&[u8]> for Combination {
+    // 5
+    // 1 4
+    // 2 3
+    // 1 1 3
+    // 1 2 2
+    // 1 1 1 2
+    // 1 1 1 1 1
+    fn from(counts: &[u8]) -> Self {
+        match counts.len() {
             1 => Self::FiveOfAKind,
             2 => {
-                if card_counts[0] == 1 {
+                if counts[0] == 1 {
                     Self::FourOfAKind
                 } else {
                     Self::FullHouse
                 }
             }
             3 => {
-                if let Some(3) = card_counts.last() {
-                    Self::ThreeOfAKind
-                } else {
-                    Self::TwoPair
-                }
-            }
-            4 => Self::OnePair,
-            5 => Self::HighCard,
-            _ => panic!("Hand doesn't have 5 cards"),
-        }
-    }
-}
-impl From<&[NormalCard]> for Combination {
-    fn from(hand: &[NormalCard]) -> Self {
-        let mut cards: HashMap<NormalCard, u8> = HashMap::new();
-
-        for &card in hand {
-            cards
-                .entry(card)
-                .and_modify(|count| *count += 1)
-                .or_insert(1);
-        }
-
-        let card_counts: Vec<u8> = cards
-            .values()
-            .sorted()
-            .map(|count| count.to_owned())
-            .collect();
-
-        // 5
-        // 1 4
-        // 2 3
-        // 1 1 3
-        // 1 2 2
-        // 1 1 1 2
-        // 1 1 1 1 1
-        match card_counts.len() {
-            1 => Self::FiveOfAKind,
-            2 => {
-                if card_counts[0] == 1 {
-                    Self::FourOfAKind
-                } else {
-                    Self::FullHouse
-                }
-            }
-            3 => {
-                if let Some(3) = card_counts.last() {
+                if let Some(3) = counts.last() {
                     Self::ThreeOfAKind
                 } else {
                     Self::TwoPair
@@ -196,50 +132,49 @@ impl From<&[NormalCard]> for Combination {
     }
 }
 
-#[derive(Debug)]
-struct Hand<T> {
-    cards: Vec<T>,
-    bid: u32,
-    combination: Combination,
-}
+fn count_occurence(hand: &[Card]) -> Vec<(Card, u8)> {
+    let mut cards: HashMap<Card, u8> = HashMap::new();
 
-impl From<&str> for Hand<JokerCard> {
-    fn from(value: &str) -> Self {
-        let (cards, bid) = value.split_once(' ').expect("Should be valid hand");
-        let bid = bid.parse().expect("should be a number");
-        let cards: Vec<JokerCard> = cards.chars().map(|ch| ch.into()).collect();
-        let combination = cards.as_slice().into();
-
-        Hand {
-            cards,
-            bid,
-            combination,
-        }
+    for card in hand {
+        cards
+            .entry(*card)
+            .and_modify(|count| *count += 1)
+            .or_insert(1);
     }
+
+    cards
+        .iter()
+        .sorted_by(|a, b| a.1.cmp(b.1))
+        .map(|(card, count)| (card.to_owned(), count.to_owned()))
+        .collect()
 }
 
-impl From<&str> for Hand<NormalCard> {
-    fn from(value: &str) -> Self {
-        let (cards, bid) = value.split_once(' ').expect("Should be valid hand");
-        let bid = bid.parse().expect("should be a number");
-        let cards: Vec<NormalCard> = cards.chars().map(|ch| ch.into()).collect();
-        let combination = cards.as_slice().into();
+fn parse_hand(value: &str) -> Hand {
+    let (cards, bid) = value.split_once(' ').expect("Should be valid hand");
+    let bid = bid.parse().expect("should be a number");
+    let cards: Vec<Card> = cards.chars().map(|ch| ch.into()).collect();
+    let counts = count_occurence(cards.as_slice());
+    let combination: Combination = counts
+        .iter()
+        .map(|(_, count)| count.to_owned())
+        .collect::<Vec<u8>>()
+        .as_slice()
+        .into();
 
-        Hand {
-            cards,
-            bid,
-            combination,
-        }
+    Hand {
+        cards,
+        bid,
+        combination,
     }
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let mut hands: Vec<Hand<NormalCard>> = input.lines().map(|line| line.into()).collect();
+    let mut hands: Vec<Hand> = input.lines().map(parse_hand).collect();
     hands.sort_by(|a, b| match a.combination.cmp(&b.combination) {
         Ordering::Equal => {
             let tuples = a.cards.iter().interleave(b.cards.iter()).tuples();
             for (a, b) in tuples {
-                match a.cmp(b) {
+                match a.value(NORMAL_ORDERING).cmp(&b.value(NORMAL_ORDERING)) {
                     Ordering::Equal => continue,
                     other => return other,
                 }
@@ -259,13 +194,42 @@ pub fn part_one(input: &str) -> Option<u32> {
     )
 }
 
+fn parse_joker_hand(value: &str) -> Hand {
+    let (cards, bid) = value.split_once(' ').expect("Should be valid hand");
+    let bid = bid.parse().expect("should be a number");
+    let cards: Vec<Card> = cards.chars().map(|ch| ch.into()).collect();
+    let mut counts = count_occurence(cards.as_slice());
+
+    let unique = counts.len();
+
+    if unique > 1 {
+        if let Some(position) = counts.iter().position(|(card, _)| card == &Card::Jack) {
+            let joker_count = counts.remove(position);
+            counts[unique - 2].1 += joker_count.1;
+        }
+    }
+
+    let combination: Combination = counts
+        .iter()
+        .map(|(_, count)| count.to_owned())
+        .collect::<Vec<u8>>()
+        .as_slice()
+        .into();
+
+    Hand {
+        cards,
+        bid,
+        combination,
+    }
+}
+
 pub fn part_two(input: &str) -> Option<u32> {
-    let mut hands: Vec<Hand<JokerCard>> = input.lines().map(|line| line.into()).collect();
+    let mut hands: Vec<Hand> = input.lines().map(parse_joker_hand).collect();
     hands.sort_by(|a, b| match a.combination.cmp(&b.combination) {
         Ordering::Equal => {
             let tuples = a.cards.iter().interleave(b.cards.iter()).tuples();
             for (a, b) in tuples {
-                match a.cmp(b) {
+                match a.value(JOKER_ORDERING).cmp(&b.value(JOKER_ORDERING)) {
                     Ordering::Equal => continue,
                     other => return other,
                 }
