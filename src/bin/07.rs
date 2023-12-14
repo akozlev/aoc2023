@@ -109,25 +109,14 @@ impl From<&[u8]> for Combination {
     // 1 1 1 2
     // 1 1 1 1 1
     fn from(counts: &[u8]) -> Self {
-        match counts.len() {
-            1 => Self::FiveOfAKind,
-            2 => {
-                if counts[0] == 1 {
-                    Self::FourOfAKind
-                } else {
-                    Self::FullHouse
-                }
-            }
-            3 => {
-                if let Some(3) = counts.last() {
-                    Self::ThreeOfAKind
-                } else {
-                    Self::TwoPair
-                }
-            }
-            4 => Self::OnePair,
-            5 => Self::HighCard,
-            _ => panic!("Hand doesn't have 5 cards"),
+        match counts {
+            [5] => Self::FiveOfAKind,
+            [2, 3] => Self::FullHouse,
+            [.., 4] => Self::FourOfAKind,
+            [.., 3] => Self::ThreeOfAKind,
+            [.., 2, 2] => Self::TwoPair,
+            [.., 2] => Self::OnePair,
+            _ => Self::HighCard,
         }
     }
 }
