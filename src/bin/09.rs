@@ -27,23 +27,13 @@ pub fn part_two(input: &str) -> Option<i32> {
             .split_whitespace()
             .map(|num| num.parse::<i32>().unwrap())
             .collect();
+        while !nums.iter().all(|&x| x == 0) {
         println!("{result} {:?}", nums);
-        for i in (1..(nums.len())).rev() {
-            nums[i] -= nums[i - 1];
-        }
-        println!("{result} {:?}", nums);
-        result += nums.pop_front().unwrap();
-        loop {
-            for i in (1..(nums.len())).rev() {
-                nums[i] -= nums[i - 1];
+            for i in (1..nums.len()).rev() {
+                nums[i] = nums[i - 1] - nums[i];
             }
-            println!("{result} {:?}", nums);
-            result -= nums.pop_front().unwrap();
-            if nums.iter().all(|&x| x == 0) {
-                break;
-            }
+            result += nums.pop_front().unwrap();
         }
-        println!();
     });
 
     Some(result)
