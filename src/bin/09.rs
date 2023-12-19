@@ -28,7 +28,6 @@ pub fn part_two(input: &str) -> Option<i32> {
             .map(|num| num.parse::<i32>().unwrap())
             .collect();
         while !nums.iter().all(|&x| x == 0) {
-        println!("{result} {:?}", nums);
             for i in (1..nums.len()).rev() {
                 nums[i] = nums[i - 1] - nums[i];
             }
@@ -52,6 +51,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(2));
     }
 }

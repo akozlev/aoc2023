@@ -1,9 +1,8 @@
-use std::{collections::HashMap, iter::repeat};
+use std::collections::HashMap;
 advent_of_code::solution!(8);
 
-
 pub fn part_one(input: &str) -> Option<u32> {
-    let paren: &[char] = &[ '(', ')' ];
+    let paren: &[char] = &['(', ')'];
     let (moves, maps) = input.split_once("\n\n").unwrap();
 
     let mut network: HashMap<&str, (&str, &str)> = HashMap::new();
@@ -28,39 +27,50 @@ pub fn part_one(input: &str) -> Option<u32> {
             }
 
             move_count += 1;
-
         } else {
             iter = moves.chars();
         }
-
     }
 
     Some(move_count)
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    let paren: &[char] = &[ '(', ')' ];
+fn gcd(a: u64, b: u64) -> u64 {
+    let mut a = a;
+    let mut b = b;
+    let mut r;
+    while a % b > 0 {
+        r = a % b;
+        a = b;
+        b = r;
+    }
+    b
+}
+
+fn lcm(a: u64, b: u64) -> u64 {
+    (a * b) / gcd(a, b)
+}
+
+pub fn part_two(input: &str) -> Option<u64> {
+    let paren: &[char] = &['(', ')'];
     let (moves, maps) = input.split_once("\n\n").unwrap();
 
     let mut network: HashMap<&str, (&str, &str)> = HashMap::new();
-    let mut current: Vec<(&str, u32)> = vec![];
+    let mut current: Vec<(&str, u64)> = vec![];
     maps.lines().for_each(|line| {
         let (key, pair) = line.split_once(" = ").unwrap();
         let value = pair.trim_matches(paren).split_once(", ").unwrap();
         network.insert(key, value);
-        if let Some('A') = key.chars().skip(2).next() {
+        if let Some('A') = key.chars().nth(2) {
             current.push((key, 0));
         }
     });
 
-    println!("{:?}", current);
-
     let mut iter;
 
-    for (key, count) in current.iter_mut()  {
-
+    for (key, count) in current.iter_mut() {
         iter = moves.chars();
-        while key.chars().nth(2).unwrap() != 'Z'{
+        while key.chars().nth(2).unwrap() != 'Z' {
             if let Some(m) = iter.next() {
                 let node = network.get(key).unwrap();
                 match m {
@@ -69,16 +79,15 @@ pub fn part_two(input: &str) -> Option<u32> {
                     _ => panic!("invalid move"),
                 }
                 *count += 1;
-
             } else {
                 iter = moves.chars();
             }
-
         }
     }
-    println!("{current:?}");
 
-    Some(0)
+    let result = current.iter().fold(1, |acc, (_, count)| lcm(*count, acc));
+
+    Some(result)
 }
 
 #[cfg(test)]
